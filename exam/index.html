@@ -1,0 +1,117 @@
+<!doctype html><html lang="si"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>විභාග වෙබ් අඩවිය – ප්‍රශ්නාවලිය</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Inter:wght@400;600;700&display=swap">
+<style>:root{padding-top:env(safe-area-inset-top,0px)}</style><style>
+/* Layout: one calm column of question cards, a sticky progress line, a summary card at the end */
+:root{--bg:#f6f8f7;--card:#ffffff;--fg:#17211e;--mute:#5d6b66;--line:#d9e1de;--acc:#0e6b5c;--acc-soft:#e1f1ed;--acc-fg:#ffffff;--warn:#b4531a;
+--f:"Noto Sans Sinhala","Inter",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1715;--card:#17211e;--fg:#e8efec;--mute:#9bada6;--line:#2a3a35;--acc:#4fc3ad;--acc-soft:#1b3a34;--acc-fg:#08211c;--warn:#f0a06a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1715;--card:#17211e;--fg:#e8efec;--mute:#9bada6;--line:#2a3a35;--acc:#4fc3ad;--acc-soft:#1b3a34;--acc-fg:#08211c;--warn:#f0a06a;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f);font-size:16px;line-height:1.65;margin:0;padding-block:0 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:720px;margin:0 auto}
+header{padding:28px 0 12px}
+h1{font-size:1.55rem;line-height:1.35;margin:0 0 8px;font-weight:700;text-wrap:balance}
+header p{margin:0;color:var(--mute)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line);margin-bottom:16px}
+.bar b{font-variant-numeric:tabular-nums}
+.track{height:6px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
+.fill{height:100%;width:0;background:var(--acc);transition:width .2s}
+.q{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;margin:0 0 14px}
+.q h2{font-size:1.02rem;margin:0 0 4px;line-height:1.5;font-weight:600}
+.q .hint{font-size:.85rem;color:var(--mute);margin:0 0 10px}
+.q .no{color:var(--acc);font-variant-numeric:tabular-nums;margin-right:6px}
+label.opt{display:flex;gap:12px;align-items:flex-start;padding:11px 12px;border:1px solid var(--line);border-radius:8px;margin:0 0 8px;cursor:pointer}
+label.opt:has(input:checked){border-color:var(--acc);background:var(--acc-soft)}
+label.opt input{margin-top:6px;width:20px;height:20px;flex:none;accent-color:var(--acc)}
+label.opt span{min-width:0}
+input[type=text],textarea{width:100%;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:4px}
+textarea{min-height:88px;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.extra{margin:2px 0 8px}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:13px 20px;cursor:pointer;background:var(--acc);color:var(--acc-fg)}
+button.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+.warn{color:var(--warn);margin:8px 0 0;min-height:1.4em}
+#out{display:none;background:var(--card);border:1px solid var(--acc);border-radius:10px;padding:18px;margin-top:18px}
+#out pre{white-space:pre-wrap;word-break:break-word;font:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;margin:10px 0}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+</style>
+</head><body><div class="wrap">
+<header>
+<h1>විභාග වෙබ් අඩවිය – ප්‍රශ්නාවලිය</h1>
+<p>කරුණාකර එක් ප්‍රශ්නයකට එක් පිළිතුරක් තෝරන්න. ගැලපෙන පිළිතුරක් නැත්නම් "වෙනත්" තෝරා ලියන්න. අවසානයේ "ඉදිරිපත් කරන්න" ඔබන්න.</p>
+</header>
+<div class="bar"><span>පිළිතුරු දුන්නේ <b id="cnt">0</b> / <b id="tot">0</b></span><div class="track"><div class="fill" id="fill"></div></div></div>
+<div class="q"><h2>ඔබේ නම (අවශ්‍ය නම් පමණක්)</h2><input type="text" id="who" aria-label="ඔබේ නම"></div><form id="f" novalidate></form>
+<div class="warn" id="warn" role="status"></div>
+<div class="row" style="margin-top:8px"><button type="button" id="go">ඉදිරිපත් කරන්න</button></div>
+<section id="out" aria-live="polite">
+<strong>ඔබේ පිළිතුරු</strong>
+<p id="sent" style="margin:6px 0 0;color:var(--mute)"></p>
+<pre id="txt"></pre>
+<div class="row"><button type="button" id="copy">පිටපත් කරන්න</button><button type="button" class="ghost" id="back">නැවත වෙනස් කරන්න</button></div>
+<div class="warn" id="cmsg"></div>
+</section>
+</div>
+<script>
+var ACCESS_KEY="d3d899b2-6b64-441c-93c8-7c06c67e27af";
+var Q=[
+{t:"පිළිතුරු තෝරන විට ශිෂ්‍යයාට වෙබ් අඩවියේ පෙනිය යුත්තේ කුමක්ද?",o:["විකල්ප අංක පමණයි (1, 2, 3, 4, 5). පිළිතුරේ වචන තියෙන්නේ PDF ප්‍රශ්න පත්‍රයේ පමණයි.","පිළිතුරේ සම්පූර්ණ වචන, අංකයත් සමඟ වෙබ් අඩවියේම පෙන්විය යුතුයි."],other:1},
+{t:"අවසාන ඉලක්කම් පිළිතුරක් ඇති ප්‍රශ්න සඳහා ලකුණු දෙන්නේ කෙසේද?",o:["අවසාන ඉලක්කම පමණයි. නිවැරදි නම් සම්පූර්ණ ලකුණු, වැරදි නම් බිංදුව.","අවසාන ඉලක්කමට ලකුණු, ඊට අමතරව ක්‍රියාපටිපාටියටත් (working) ටිකක් ලකුණු."],other:1},
+{t:"එක් අවසාන ඉලක්කමක් නැති ප්‍රශ්න (පියවර ප්‍රශ්න) සඳහා ලකුණු දෙන්නේ කෙසේද?",o:["හැම පියවරකටම වෙන වෙනම නිවැරදි පිළිතුරක් සහ ලකුණු.","අවසාන පියවරට පමණක් ලකුණු.","ගුරුවරයා අතින් ලකුණු දානවා."],other:1},
+{t:"අවසාන ඉලක්කමට පසු, ශිෂ්‍යයා තමන්ගේ ක්‍රියාපටිපාටිය (PDF හෝ ඡායාරූප) උඩුගත කිරීම:",o:["සෑම ප්‍රශ්නයකටම අනිවාර්යයි.","අනිවාර්ය නැහැ. ගුරුවරයාට බලන්න පමණයි, ලකුණු වලට බලපාන්නේ නැහැ.","උඩුගත කිරීමක් කිසිසේත් නැහැ."]},
+{t:"කාල ගණකය (timer) ක්‍රියා කළ යුත්තේ කෙසේද?",o:["හැම ප්‍රශ්න පත්‍රයකටම ගුරුවරයා වෙන වෙනම කාලය තීරණය කරනවා.","හැම ප්‍රශ්න පත්‍රයකටම එකම කාලය.","කාල ගණකයක් නැහැ."]},
+{t:"එකම ප්‍රශ්න පත්‍රය ශිෂ්‍යයන්ට නැවත උත්සාහ කළ හැකිද?",o:["ඔව්, සීමාවක් නැතිව.","ඔව්, නමුත් නියමිත වාර ගණනක් පමණයි.","නැහැ, එක් වරක් පමණයි."],extra:"නියමිත වාර ගණන (ඉහත දෙවැන්න තෝරා නම්):"},
+{t:"ශිෂ්‍යයෙක් එක් වරකට වඩා උත්සාහ කළොත්, ගණන් ගත යුත්තේ කුමක්ද?",o:["හොඳම උත්සාහය.","අවසන් උත්සාහය.","සියලුම උත්සාහ පෙන්වනවා, ගුරුවරයා තීරණය කරනවා."]},
+{t:"ශිෂ්‍යයාට ලකුණු පෙන්විය යුත්තේ කවදාද?",o:["ඉදිරිපත් කළ සැණින්, නිවැරදි/වැරදි පිළිතුරු සහ නිවැරදි පිළිතුරුත් සමඟ.","ඉදිරිපත් කළ සැණින්, මුළු ලකුණු පමණයි.","ගුරුවරයා ප්‍රතිඵල නිකුත් කළ පසුව පමණයි."]},
+{t:"ශිෂ්‍ය ගිණුම් (username සහ password) හදන්නේ කෙසේද?",o:["ගුරුවරයා ශිෂ්‍යයන් එකින් එක එකතු කරනවා.","ලැයිස්තුවක් (Excel) උඩුගත කර, එකවර සියලු ගිණුම් හදනවා."],other:1},
+{t:"ශිෂ්‍යයන් ගණන ආසන්න වශයෙන් කීයද?",o:["100 ට අඩු","200 පමණ","300 ට වැඩි"]},
+{t:"ගුරුවරයාට වෙබ් අඩවියෙන් බලන්න ඕනේ දේවල් මොනවාද?",hint:"කීපයක් තෝරන්න පුළුවන්.",multi:1,o:["එක් එක් ශිෂ්‍යයාගේ ලකුණු","එක් එක් ශිෂ්‍යයා උත්සාහ කළ වාර ගණන","ශිෂ්‍යයා අවසන් වරට ප්‍රශ්න පත්‍රය කළ වේලාව","එක් එක් ශිෂ්‍යයාගේ ප්‍රශ්නයෙන් ප්‍රශ්නය ප්‍රතිඵල","ප්‍රශ්න පත්‍ර අනුව සාමාන්‍ය ලකුණු"],other:1}
+];
+var f=document.getElementById('f');
+var html='';
+Q.forEach(function(q,i){
+ var type=q.multi?'checkbox':'radio';
+ html+='<fieldset class="q" id="q'+i+'" style="border:1px solid var(--line);min-width:0"><legend style="display:none"></legend>';
+ html+='<h2><span class="no">'+(i+1)+'.</span>'+q.t+'</h2>';
+ if(q.hint)html+='<p class="hint">'+q.hint+'</p>';
+ q.o.forEach(function(o,j){html+='<label class="opt"><input type="'+type+'" name="q'+i+'" value="'+j+'"><span>'+o+'</span></label>';});
+ if(q.other)html+='<label class="opt"><input type="'+type+'" name="q'+i+'" value="other"><span>වෙනත් (ලියන්න)</span></label><input type="text" id="o'+i+'" placeholder="ඔබේ පිළිතුර ලියන්න" aria-label="වෙනත් පිළිතුර">';
+ if(q.extra)html+='<div class="extra"><span class="hint" style="font-size:.85rem;color:var(--mute)">'+q.extra+'</span><input type="text" id="e'+i+'" inputmode="numeric" aria-label="වාර ගණන"></div>';
+ html+='</fieldset>';
+});
+html+='<div class="q"><h2><span class="no">'+(Q.length+1)+'.</span>තවත් කියන්න ඕනේ දෙයක් තියෙනවද? (අවශ්‍ය නම් පමණක්)</h2><textarea id="more" aria-label="අමතර සටහන්"></textarea></div>';
+f.innerHTML=html;
+document.getElementById('tot').textContent=Q.length;
+function answered(i){var el=f.querySelectorAll('input[name="q'+i+'"]:checked');return el.length>0;}
+function upd(){var n=0;for(var i=0;i<Q.length;i++)if(answered(i))n++;document.getElementById('cnt').textContent=n;document.getElementById('fill').style.width=(n/Q.length*100)+'%';}
+f.addEventListener('change',upd);
+function tx(i){var q=Q[i],r=[];f.querySelectorAll('input[name="q'+i+'"]:checked').forEach(function(c){
+ if(c.value==='other'){r.push('වෙනත්: '+(document.getElementById('o'+i).value||'').trim());}
+ else{var s=q.o[+c.value];if(q.extra&&c.value==='1'){var e=(document.getElementById('e'+i).value||'').trim();if(e)s+=' ('+e+' වාර)';}r.push(s);}});return r;}
+document.getElementById('go').onclick=function(){
+ var miss=[];for(var i=0;i<Q.length;i++)if(!answered(i))miss.push(i+1);
+ var w=document.getElementById('warn');
+ if(miss.length){w.textContent='පිළිතුරු නොදුන් ප්‍රශ්න: '+miss.join(', ');var t=document.getElementById('q'+(miss[0]-1));t.scrollIntoView({behavior:'smooth',block:'center'});return;}
+ w.textContent='';
+ var s='විභාග වෙබ් අඩවිය – පිළිතුරු\n\n';
+ for(var i=0;i<Q.length;i++){s+=(i+1)+'. '+Q[i].t+'\n   → '+tx(i).join(' | ')+'\n\n';}
+ var m=(document.getElementById('more').value||'').trim();if(m)s+=(Q.length+1)+'. අමතර සටහන්: '+m+'\n';
+ s=s.trim();var who=(document.getElementById('who').value||'').trim();if(who)s='නම: '+who+'\n\n'+s;
+ document.getElementById('txt').textContent=s;
+ var o=document.getElementById('out');var sent=document.getElementById('sent');var btn=document.getElementById('go');
+ function show(msg){sent.textContent=msg;o.style.display='block';o.scrollIntoView({behavior:'smooth',block:'start'});}
+ if(ACCESS_KEY.indexOf('YOUR_')===0){show('පිළිතුරු යැවීම තවම සකසා නැහැ. පහත පිටපත් කරන්න ඔබා, WhatsApp වලින් එවන්න.');return;}
+ btn.disabled=true;btn.textContent='යවමින්...';
+ fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({access_key:ACCESS_KEY,subject:'විභාග වෙබ් අඩවිය – ප්‍රශ්නාවලියේ පිළිතුරු',from_name:who||'Questionnaire',message:s})})
+ .then(function(r){return r.json();}).then(function(d){btn.disabled=false;btn.textContent='ඉදිරිපත් කරන්න';
+  if(d&&d.success){show('ඔබේ පිළිතුරු යැවුවා. ස්තූතියි!');}else{show('යවන්න බැරි වුණා. පහත පිටපත් කරන්න ඔබා, WhatsApp වලින් එවන්න.');}})
+ .catch(function(){btn.disabled=false;btn.textContent='ඉදිරිපත් කරන්න';show('යවන්න බැරි වුණා. පහත පිටපත් කරන්න ඔබා, WhatsApp වලින් එවන්න.');});
+};
+document.getElementById('back').onclick=function(){document.getElementById('out').style.display='none';window.scrollTo({top:0,behavior:'smooth'});};
+document.getElementById('copy').onclick=function(){
+ var t=document.getElementById('txt').textContent,m=document.getElementById('cmsg');
+ function sel(){var r=document.createRange();r.selectNodeContents(document.getElementById('txt'));var s=window.getSelection();s.removeAllRanges();s.addRange(r);m.textContent='පිටපත් කරන්න බැරි වුණා. තෝරාගත් අකුරු අතින් copy කරන්න.';}
+ try{navigator.clipboard.writeText(t).then(function(){m.style.color='var(--acc)';m.textContent='පිටපත් කළා. දැන් WhatsApp එකේ paste කරන්න.';},sel);}catch(e){sel();}
+};
+</script></body></html>
